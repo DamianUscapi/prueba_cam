@@ -38,41 +38,6 @@ $(function() {
         handleError: function(err) {
             console.log(err);
         },
-        updateOptionsForMediaRange: function(node, range) {
-            console.log('updateOptionsForMediaRange', node, range);
-            var NUM_STEPS = 6;
-            var stepSize = (range.max - range.min) / NUM_STEPS;
-            var option;
-            var value;
-            while (node.firstChild) {
-                node.removeChild(node.firstChild);
-            }
-            for (var i = 0; i <= NUM_STEPS; i++) {
-                value = range.min + (stepSize * i);
-                option = document.createElement('option');
-                option.value = value;
-                option.innerHTML = value;
-                node.appendChild(option);
-            }
-        },
-        applySettingsVisibility: function(setting, capability) {
-            // depending on type of capability
-            if (typeof capability === 'boolean') {
-                var node = document.querySelector('input[name="settings_' + setting + '"]');
-                if (node) {
-                    node.parentNode.style.display = capability ? 'block' : 'none';
-                }
-                return;
-            }
-            if (window.MediaSettingsRange && capability instanceof window.MediaSettingsRange) {
-                var node = document.querySelector('select[name="settings_' + setting + '"]');
-                if (node) {
-                    this.updateOptionsForMediaRange(node, capability);
-                    node.parentNode.style.display = 'block';
-                }
-                return;
-            }
-        },
         initCameraSelection: function(){
             var streamLabel = Quagga.CameraAccess.getActiveStreamLabel();
 
