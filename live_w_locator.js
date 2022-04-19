@@ -38,15 +38,6 @@ $(function() {
         handleError: function(err) {
             console.log(err);
         },
-        checkCapabilities: function() {
-            var track = Quagga.CameraAccess.getActiveTrack();
-            var capabilities = {};
-            if (typeof track.getCapabilities === 'function') {
-                capabilities = track.getCapabilities();
-            }
-            this.applySettingsVisibility('zoom', capabilities.zoom);
-            this.applySettingsVisibility('torch', capabilities.torch);
-        },
         updateOptionsForMediaRange: function(node, range) {
             console.log('updateOptionsForMediaRange', node, range);
             var NUM_STEPS = 6;
