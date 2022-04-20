@@ -16,6 +16,8 @@ $(function() {
             code: "4SO64P4X8 U4YUU1T-", format: "code_93"
         }],
         filter: function(codeResult) {
+            // only store results which match this constraint
+            // e.g.: codeResult
             return true;
         }
     });
@@ -27,12 +29,58 @@ $(function() {
                 if (err) {
                     return self.handleError(err);
                 }
+                //Quagga.registerResultCollector(resultCollector);
                 App.attachListeners();
+                App.checkCapabilities();
                 Quagga.start();
             });
         },
         handleError: function(err) {
             console.log(err);
+        },
+        checkCapabilities: function() {
+            var track = Quagga.CameraAccess.getActiveTrack();
+            var capabilities = {};
+            if (typeof track.getCapabilities === 'function') {
+                capabilities = track.getCapabilities();
+            }
+            this.applySettingsVisibility('zoom', capabilities.zoom);
+            this.applySettingsVisibility('torch', capabilities.torch);
+        },
+        updateOptionsForMediaRange: function(node, range) {
+            console.log('updateOptionsForMediaRange', node, range);
+            var NUM_STEPS = 6;
+            var stepSize = (range.max - range.min) / NUM_STEPS;
+            var option;
+            var value;
+            while (node.firstChild) {
+                node.removeChild(node.firstChild);
+            }
+            for (var i = 0; i <= NUM_STEPS; i++) {
+                value = range.min + (stepSize * i);
+                option = document.createElement('option');
+                option.value = value;
+                option.innerHTML = value;
+                node.appendChild(option);
+            }
+        },
+        applySettingsVisibility: function(setting, capability) {
+            // depending on type of capability
+            if (typeof capability === 'boolean') {
+                var node = document.querySelector('input[name="settings_' + setting + '"]');
+                if (node) {
+                    node.parentNode.style.display = capability ? 'block' : 'none';
+                }
+                return;
+            }
+            if (window.MediaSettingsRange && capability instanceof window.MediaSettingsRange) {
+                var node = document.querySelector('select[name="settings_' + setting + '"]');
+                if (node) {
+                    this.updateOptionsForMediaRange(node, capability);
+                    node.parentNode.style.display = 'block';
+                }
+                return;
+            }
         },
         initCameraSelection: function(){
             var streamLabel = Quagga.CameraAccess.getActiveStreamLabel();
@@ -75,6 +123,34 @@ $(function() {
                 console.log("Value of "+ state + " changed to " + value);
                 self.setState(state, value);
             });
+        },
+        _printCollectedResults: function() {
+            var results = resultCollector.getResults(),
+                $ul = $("#result_strip ul.collector");
+
+            results.forEach(function(result) {
+                var $li = $('<li><div class="thumbnail"><div class="imgWrapper"><img /></div><div class="caption"><h4 class="code"></h4></div></div></li>');
+
+                $li.find("img").attr("src", result.frame);
+                $li.find("h4.code").html(result.codeResult.code + " (" + result.codeResult.format + ")");
+                $ul.prepend($li);
+            });
+        },
+        _accessByPath: function(obj, path, val) {
+            var parts = path.split('.'),
+                depth = parts.length,
+                setter = (typeof val !== "undefined") ? true : false;
+
+            return parts.reduce(function(o, key, i) {
+                if (setter && (i + 1) === depth) {
+                    if (typeof o[key] === "object" && typeof val === "object") {
+                        Object.assign(o[key], val);
+                    } else {
+                        o[key] = val;
+                    }
+                }
+                return key in o ? o[key] : {};
+            }, obj);
         },
         _convertNameToState: function(name) {
             return name.replace("_", ".").split("-").reduce(function(result, value) {
@@ -211,7 +287,7 @@ $(function() {
             App.lastResult = code;
             var $node = null, canvas = Quagga.canvas.dom.image;
 
-            $node = $('<li><h4 class="code"></h4></li>');
+            $node = $('<li><div class="thumbnail"><div class="imgWrapper"><img /></div><div class="caption"><h4 class="code"></h4></div></div></li>');
             $node.find("img").attr("src", canvas.toDataURL());
             $node.find("h4.code").html(code);
             $("#result_strip ul.thumbnails").prepend($node);
@@ -219,3 +295,4 @@ $(function() {
     });
 
 });
+
